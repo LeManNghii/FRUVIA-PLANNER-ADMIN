@@ -1,13 +1,23 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // Đã thêm từ khóa 'type' vào IconDefinition để giải quyết lỗi Vite/Runtime
-import { faTachometerAlt, faUsers, faListCheck, faTag, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import {
+    faTachometerAlt,
+    faUsers,
+    faListCheck,
+    faTag,
+    type IconDefinition,
+} from '@fortawesome/free-solid-svg-icons';
 
 // Định nghĩa TypeScript Interface cho props
 interface SidebarProps {
-    activePage: 'Dashboard' | 'UserManagement' | 'TaskReports' | 'LabelManagement';
+    activePage:
+        | 'Dashboard'
+        | 'UserManagement'
+        | 'TaskReports'
+        | 'LabelManagement';
     // Hàm xử lý chuyển trang
-    onNavigate: (page: string) => void; 
+    onNavigate: (page: string) => void;
 }
 
 // Định nghĩa cấu trúc menu
@@ -25,15 +35,14 @@ const menuItems: MenuItem[] = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
-    
-    // Color #388A2C is applied for the Sidebar
+    // Color #266B1C is applied for the Sidebar
     const sidebarStyle: React.CSSProperties = {
         height: '100vh',
         width: '250px',
         position: 'fixed',
         top: 0,
         left: 0,
-        backgroundColor: '#388A2C', 
+        backgroundColor: '#266B1C',
         paddingTop: '20px',
         zIndex: 1000,
         boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
@@ -48,20 +57,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
     };
 
     const activeLinkStyle: React.CSSProperties = {
-        backgroundColor: '#4CAF50', // Lighter color for active
+        backgroundColor: '#3D8C2A', // Active menu item color
         color: '#fff',
     };
 
     return (
         <div style={sidebarStyle} className="d-flex flex-column">
-            <h3 className="text-white text-center mb-4 border-bottom pb-3">FRUVIA MANAGEMENT</h3>
-            
+            <h3 className="text-white text-center mb-4 border-bottom pb-3">
+                FRUVIA MANAGEMENT
+            </h3>
+
             <nav className="flex-grow-1">
                 {menuItems.map((item) => {
                     const isActive = item.page === activePage;
                     const combinedStyle: React.CSSProperties = {
                         ...linkStyle,
-                        ...(isActive ? activeLinkStyle : {})
+                        ...(isActive ? activeLinkStyle : {}),
                     };
 
                     return (
@@ -76,18 +87,23 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
                             style={combinedStyle}
                             onMouseEnter={(e) => {
                                 if (!isActive) {
-                                    e.currentTarget.style.backgroundColor = '#4CAF50';
+                                    e.currentTarget.style.backgroundColor =
+                                        '#3D8C2A';
                                     e.currentTarget.style.color = '#fff';
                                 }
                             }}
                             onMouseLeave={(e) => {
                                 if (!isActive) {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.backgroundColor =
+                                        'transparent';
                                     e.currentTarget.style.color = '#d8ead5';
                                 }
-                            }}
-                        >
-                            <FontAwesomeIcon icon={item.icon} fixedWidth className="me-2" />
+                            }}>
+                            <FontAwesomeIcon
+                                icon={item.icon}
+                                fixedWidth
+                                className="me-2"
+                            />
                             {item.name}
                         </a>
                     );
