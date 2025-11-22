@@ -1,118 +1,209 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClock, faHourglassHalf, faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
+import { faClock, faWarning } from '@fortawesome/free-solid-svg-icons';
+import { faTasks, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { firestoreDb } from '../../config/FirebaseConfig';
+import TaskDistributionPieChart from '../components/TaskDistributionPieChart';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from 'recharts';
 
 const TaskReports: React.FC = () => {
+    type TaskDoc = {
+        id: string;
+        title?: string;
+        dueDate?: any;
+        createdAt?: any;
+        completedAt?: any;
+        status?: string;
+        [k: string]: any;
+    };
+
+    const [tasks, setTasks] = useState<TaskDoc[]>([]);
+    const [kpi, setKpi] = useState({ total: 0, completed: 0, pending: 0, overdue: 0 });
+    const [pieData, setPieData] = useState<{ name: string; value: number; color?: string }[]>([]);
+    const [weekData, setWeekData] = useState<{ day: string; count: number }[]>([]);
+
+    const parseDate = (v: any): Date | null => {
+        if (v == null) return null;
+        if (typeof v === 'object' && typeof v.toDate === 'function') return v.toDate();
+        if (typeof v === 'number') return new Date(v);
+        if (typeof v === 'string') {
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? null : d;
+        }
+        return null;
+    };
+
+    useEffect(() => {
+        const col = collection(firestoreDb, 'tasks');
+        const unsub = onSnapshot(col, (snap) => {
+            const docs: TaskDoc[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) } as TaskDoc));
+            setTasks(docs);
+
+            // compute month range
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).getTime();
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+            let total = 0;
+            let completed = 0;
+            let pending = 0;
+            let overdue = 0;
+
+            const nowTime = Date.now();
+
+            docs.forEach((t) => {
+                const createdAt = parseDate(t.createdAt);
+                const completedAt = parseDate(t.completedAt);
+                const dueDate = parseDate(t.dueDate);
+
+                const isCompleted = !!completedAt || t.completed === true || String(t.completed) === 'true' || (t.status && String(t.status).toLowerCase() === 'completed');
+
+                if (createdAt && createdAt.getTime() >= startOfMonth && createdAt.getTime() <= endOfMonth) {
+                    total++;
+                    if (isCompleted) completed++;
+                    else pending++;
+                }
+
+                if (dueDate) {
+                    const dt = dueDate.getTime();
+                    if (dt >= startOfMonth && dt <= endOfMonth && dt < nowTime && !isCompleted) {
+                        overdue++;
+                    }
+                }
+            });
+
+            setKpi({ total, completed, pending, overdue });
+
+            const pie = [
+                { name: 'Completed', value: completed, color: '#2ecc71' },
+                { name: 'Pending', value: pending, color: '#f1c40f' },
+                { name: 'Overdue', value: overdue, color: '#e74c3c' },
+            ];
+            setPieData(pie);
+
+            // week data (Mon-Sun) for dueDate in current week
+            const today = new Date();
+            const dayIdx = (today.getDay() + 6) % 7; // 0=Mon
+            const startOfWeekDate = new Date(today);
+            startOfWeekDate.setDate(today.getDate() - dayIdx);
+            startOfWeekDate.setHours(0, 0, 0, 0);
+            const startMs = startOfWeekDate.getTime();
+            const counts = new Array(7).fill(0);
+            const msInDay = 24 * 60 * 60 * 1000;
+            docs.forEach((t) => {
+                const due = parseDate(t.dueDate);
+                if (!due) return;
+                const dms = due.getTime();
+                const diff = dms - startMs;
+                if (diff >= 0 && diff < 7 * msInDay) {
+                    const idx = Math.floor(diff / msInDay);
+                    counts[idx] = (counts[idx] || 0) + 1;
+                }
+            });
+            const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const weekArr = labels.map((lab, i) => ({ day: lab, count: counts[i] || 0 }));
+            setWeekData(weekArr);
+        });
+
+        return () => unsub();
+    }, []);
 
     return (
         <>
-            <h1 className="mb-4">Task Reports</h1>
-
             {/* KPI Cards Section */}
-            <div className="row">
-                <div className="col-xl-3 col-md-6 mb-4">
-                    <div className="card kpi-card-report border-danger h-100 py-2">
-                        <div className="card-body">
-                            <div className="row no-gutters align-items-center">
-                                <div className="col me-2">
-                                    <div className="text-xs fw-bold text-danger text-uppercase mb-1">
-                                        Overdue Tasks (Total)
-                                    </div>
-                                    <div className="h5 mb-0 fw-bold text-gray-800">1,250</div>
-                                </div>
-                                <div className="col-auto">
-                                    <FontAwesomeIcon icon={faClock} size="2x" className="text-gray-300" />
-                                </div>
-                            </div>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-blue-600 uppercase">Total Tasks (this month)</p>
+                        <p className="text-3xl font-bold">{kpi.total}</p>
+                    </div>
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                        <FontAwesomeIcon icon={faTasks} className="text-blue-600 text-3xl" />
                     </div>
                 </div>
 
-                <div className="col-xl-3 col-md-6 mb-4">
-                    <div className="card kpi-card-report border-warning h-100 py-2">
-                        <div className="card-body">
-                            <div className="row no-gutters align-items-center">
-                                <div className="col me-2">
-                                    <div className="text-xs fw-bold text-warning text-uppercase mb-1">
-                                        Tasks Due Soon (24h)
-                                    </div>
-                                    <div className="h5 mb-0 fw-bold text-gray-800">450</div>
-                                </div>
-                                <div className="col-auto">
-                                    <FontAwesomeIcon icon={faHourglassHalf} size="2x" className="text-gray-300" />
-                                </div>
-                            </div>
-                        </div>
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-green-600 uppercase">Completed (this month)</p>
+                        <p className="text-3xl font-bold">{kpi.completed}</p>
+                    </div>
+                    <div className="bg-green-100 p-3 rounded-lg">
+                        <FontAwesomeIcon icon={faCheckCircle} className="text-green-600 text-3xl" />
                     </div>
                 </div>
 
-                <div className="col-xl-6 col-md-6 mb-4">
-                    <div className="card kpi-card-report border-primary h-100 py-2">
-                        <div className="card-body">
-                            <div className="row no-gutters align-items-center">
-                                <div className="col me-2">
-                                    <div className="text-xs fw-bold text-primary text-uppercase mb-1">
-                                        On-Time Completion Rate (Monthly)
-                                    </div>
-                                    <div className="h5 mb-0 fw-bold text-gray-800">75% <small className="text-success">(Up 2% from last month)</small></div>
-                                </div>
-                                <div className="col-auto">
-                                    <FontAwesomeIcon icon={faCalendarCheck} size="2x" className="text-gray-300" />
-                                </div>
-                            </div>
-                        </div>
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-yellow-600 uppercase">Pending (this month)</p>
+                        <p className="text-3xl font-bold">{kpi.pending}</p>
+                    </div>
+                    <div className="bg-yellow-100 p-3 rounded-lg">
+                        <FontAwesomeIcon icon={faClock} className="text-yellow-500 text-3xl" />
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-red-600 uppercase">Over Due (this month)</p>
+                        <p className="text-3xl font-bold">{kpi.overdue}</p>
+                    </div>
+                    <div className="bg-red-100 p-3 rounded-lg">
+                        <FontAwesomeIcon icon={faWarning} className="text-red-500 text-3xl" />
                     </div>
                 </div>
             </div>
-            
-            {/* Critical Overdue Tasks Table */}
-            <div className="row">
-                <div className="col-12 mb-4">
-                    <div className="card shadow mb-4">
-                        <div className="card-header py-3">
-                            <h6 className="m-0 fw-bold text-danger">List of Critical Overdue Tasks</h6>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <div className="card shadow mb-4 bg-white rounded-lg">
+                        <div className="card-header py-3 pl-3">
+                            <h6 className="m-0 fw-bold text-primary">Workload Over Time (Due this week)</h6>
                         </div>
-                        <div className="card-body">
-                            <div className="table-responsive">
-                                <table className="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Task ID</th>
-                                            <th>Task Name</th>
-                                            <th>Deadline</th>
-                                            <th>User</th>
-                                            <th>Label</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>T001</td>
-                                            <td>Complete Quarterly Report</td>
-                                            <td className="text-danger">2025-11-15</td>
-                                            <td>Nguyen Van A</td>
-                                            <td><span className="badge bg-primary">Work</span></td>
-                                            <td>6 days overdue</td>
-                                        </tr>
-                                        <tr>
-                                            <td>T002</td>
-                                            <td>Schedule Health Check-up</td>
-                                            <td className="text-danger">2025-11-20</td>
-                                            <td>Tran Thi B</td>
-                                            <td><span className="badge bg-success">Health</span></td>
-                                            <td>1 day overdue</td>
-                                        </tr>
-                                        <tr>
-                                            <td>T003</td>
-                                            <td>Mobile App Project Phase 1</td>
-                                            <td className="text-danger">2025-11-05</td>
-                                            <td>Le Van C</td>
-                                            <td><span className="badge bg-secondary">Project</span></td>
-                                            <td>16 days overdue</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div className="card-body p-4" style={{ minHeight: 400 }}>
+                            {weekData.length === 0 ? (
+                                <p className="text-center text-muted pt-5">No due-date data for this week.</p>
+                            ) : (
+                                <ResponsiveContainer width="100%" height={250}>
+                                    <AreaChart data={weekData}>
+                                        <defs>
+                                            <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
+                                                <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="day" />
+                                        <YAxis allowDecimals={false} />
+                                        <Tooltip />
+                                        <Area type="monotone" dataKey="count" stroke="#2ecc71" fillOpacity={1} fill="url(#colorCount)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div className="card shadow mb-4 bg-white rounded-lg">
+                        <div className="card-header py-3 pl-3">
+                            <h6 className="m-0 fw-bold text-primary">Task Distribution (this month)</h6>
+                        </div>
+                        <div className="card-body p-4" style={{ minHeight: 400 }}>
+                            {pieData.reduce((s, p) => s + p.value, 0) === 0 ? (
+                                <p className="text-center text-muted pt-5">No task distribution data available.</p>
+                            ) : (
+                                <TaskDistributionPieChart data={pieData} />
+                            )}
                         </div>
                     </div>
                 </div>

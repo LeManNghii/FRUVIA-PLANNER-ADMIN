@@ -43,7 +43,7 @@ const App: React.FC = () => {
         marginLeft: '250px', // Bù trừ cho Sidebar
         padding: '20px',
         minHeight: '100vh',
-        backgroundColor: '#ffffff', // Background trắng
+        backgroundColor: '#ebe9e9ff', // Background trắng
     };
 
     return (
