@@ -1,35 +1,70 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { firestoreDb } from '../../config/FirebaseConfig';
 
 // 1. Định nghĩa Interface
-interface Label {
-    id: number;
-    name: string;
-    color: string;
-    usage: number;
+interface Category {
+    id: string; // Document ID từ Firebase
+    name: string; // Từ field "title" trong Firebase
+    color: string; // Từ field "color" trong Firebase
 }
 
-// Mock Data
-const initialLabels: Label[] = [
-    { id: 1, name: 'Work', color: '#007bff', usage: 15000 },
-    { id: 2, name: 'Personal', color: '#28a745', usage: 8000 },
-    { id: 3, name: 'Study', color: '#ffc107', usage: 4500 },
-    { id: 4, name: 'Health', color: '#dc3545', usage: 2100 },
-];
-
 const LabelManagement: React.FC = () => {
-    const [labels, setLabels] = useState<Label[]>(initialLabels);
-    let nextId = Math.max(...labels.map((l) => l.id), 0) + 1;
+    // State quản lý categories/labels từ Firebase
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState<boolean>(true);
+
+    // State search
+    const [searchTerm, setSearchTerm] = useState<string>('');
 
     // State để quản lý dữ liệu trong form (dùng cho cả Add và Edit)
-    const [formData, setFormData] = useState<
-        Omit<Label, 'usage'> & { id: number | null }
-    >({
+    const [formData, setFormData] = useState<{
+        id: string | null;
+        name: string;
+        color: string;
+    }>({
         id: null,
         name: '',
-        color: '#007bff',
+        color: '#EF4444',
     });
+
+    // useEffect: Lắng nghe realtime categories từ Firebase
+    useEffect(() => {
+        console.log('🔥 Setting up Firebase listener for categories...');
+        const colRef = collection(firestoreDb, 'category');
+
+        const unsub = onSnapshot(
+            colRef,
+            (snapshot) => {
+                const items = snapshot.docs.map((d) => {
+                    const data = d.data() as any;
+                    return {
+                        id: d.id, // Lấy document ID từ Firebase
+                        name: data.title || 'Untitled',
+                        color: data.color || '#3D8BFF',
+                    };
+                });
+                console.log(
+                    `✅ Loaded ${items.length} categories from Firebase:`,
+                    items
+                );
+                setCategories(items);
+                setLoadingCategories(false);
+            },
+            (err) => {
+                console.error('❌ Category snapshot error:', err);
+                setLoadingCategories(false);
+            }
+        );
+
+        // Cleanup function
+        return () => {
+            console.log('🧹 Cleaning up Firebase listener');
+            unsub();
+        };
+    }, []);
 
     // Hàm thay đổi trạng thái Form
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,60 +72,31 @@ const LabelManagement: React.FC = () => {
         setFormData((prev) => ({ ...prev, [id]: value }));
     };
 
-    // Hàm xử lý Submit Form
+    // Hàm xử lý Submit Form (tạm thời chỉ log, chưa save vào Firebase)
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
-        if (formData.id !== null) {
-            // Update
-            setLabels((prevLabels) =>
-                prevLabels.map((label) =>
-                    label.id === formData.id
-                        ? {
-                              ...label,
-                              name: formData.name,
-                              color: formData.color,
-                          }
-                        : label
-                )
-            );
-            // Sử dụng console.log thay cho alert()
-            console.log('Label updated successfully!');
-        } else {
-            // Create
-            const newLabel: Label = {
-                id: nextId++,
-                name: formData.name,
-                color: formData.color,
-                usage: 0,
-            };
-            setLabels((prevLabels) => [...prevLabels, newLabel]);
-            console.log('New label added successfully!');
-        }
+        console.log('Form submitted:', formData);
+        alert('Chức năng thêm/sửa sẽ được implement sau!');
         resetForm();
     };
 
-    // Hàm xóa nhãn
-    const deleteLabel = (id: number) => {
-        // Thay thế window.confirm bằng modal UI
-        if (window.confirm('Are you sure you want to delete this label?')) {
-            setLabels((prevLabels) =>
-                prevLabels.filter((label) => label.id !== id)
-            );
-            console.log('Label deleted successfully!');
+    // Hàm xóa nhãn (tạm thời chỉ log)
+    const handleDeleteLabel = (id: string, name: string) => {
+        if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
+            console.log('Delete label:', id);
+            alert('Chức năng xóa sẽ được implement sau!');
         }
     };
 
     // Hàm tải dữ liệu vào form (Edit)
-    const editLabel = (id: number) => {
-        const labelToEdit = labels.find((l) => l.id === id);
-        if (labelToEdit) {
-            setFormData({
-                id: labelToEdit.id,
-                name: labelToEdit.name,
-                color: labelToEdit.color,
-            });
-        }
+    const handleEditLabel = (category: Category) => {
+        setFormData({
+            id: category.id,
+            name: category.name,
+            color: category.color,
+        });
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // Hàm reset form
@@ -98,9 +104,21 @@ const LabelManagement: React.FC = () => {
         setFormData({
             id: null,
             name: '',
-            color: '#007bff',
+            color: '#EF4444',
         });
     };
+
+    // Filter categories theo search term
+    const filteredCategories = useMemo(() => {
+        if (!searchTerm.trim()) return categories;
+
+        const lowerSearch = searchTerm.toLowerCase();
+        return categories.filter(
+            (cat) =>
+                cat.name.toLowerCase().includes(lowerSearch) ||
+                cat.color.toLowerCase().includes(lowerSearch)
+        );
+    }, [categories, searchTerm]);
 
     const predefinedColors = [
         '#EF4444',
@@ -256,6 +274,10 @@ const LabelManagement: React.FC = () => {
                                 <input
                                     type="text"
                                     placeholder="Search labels..."
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
                                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-64"
                                 />
                             </div>
@@ -284,67 +306,113 @@ const LabelManagement: React.FC = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {labels.map((label, index) => (
-                                        <tr
-                                            key={label.id}
-                                            className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {index + 1}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span
-                                                    className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium text-white"
-                                                    style={{
-                                                        backgroundColor:
-                                                            label.color,
-                                                    }}>
-                                                    {label.name}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-2">
-                                                    <div
-                                                        className="w-6 h-6 rounded border border-gray-300"
-                                                        style={{
-                                                            backgroundColor:
-                                                                label.color,
-                                                        }}
-                                                    />
-                                                    <span className="text-sm text-gray-600 font-mono">
-                                                        {label.color}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {label.usage}
-                                                </span>
-                                                <span className="text-xs text-gray-500 ml-1">
-                                                    tasks
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        className="bg-white p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Edit">
-                                                        <FontAwesomeIcon
-                                                            icon={faEdit}
-                                                            className="w-4 h-4"
-                                                        />
-                                                    </button>
-                                                    <button
-                                                        className="bg-white p-2 text-red-600 hover:bg-red-50 hover:border-red-600 rounded-lg transition-colors"
-                                                        title="Delete">
-                                                        <FontAwesomeIcon
-                                                            icon={faTrash}
-                                                            className="w-4 h-4"
-                                                        />
-                                                    </button>
-                                                </div>
+                                    {loadingCategories ? (
+                                        <tr>
+                                            <td
+                                                colSpan={5}
+                                                className="px-6 py-8 text-center">
+                                                <p className="text-gray-500">
+                                                    Loading data from
+                                                    Firebase...
+                                                </p>
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : filteredCategories.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan={5}
+                                                className="px-6 py-8 text-center">
+                                                <p className="text-gray-500">
+                                                    {searchTerm
+                                                        ? `No labels found matching "${searchTerm}"`
+                                                        : 'No labels found.'}
+                                                </p>
+                                                {!searchTerm && (
+                                                    <p className="text-sm text-gray-400 mt-2">
+                                                        Create categories in
+                                                        Firebase collection
+                                                        "category"
+                                                    </p>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredCategories.map(
+                                            (category, index) => (
+                                                <tr
+                                                    key={category.id}
+                                                    className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        {index + 1}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span
+                                                            className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium text-white"
+                                                            style={{
+                                                                backgroundColor:
+                                                                    category.color,
+                                                            }}>
+                                                            {category.name}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center gap-2">
+                                                            <div
+                                                                className="w-6 h-6 rounded border border-gray-300"
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        category.color,
+                                                                }}
+                                                            />
+                                                            <span className="text-sm text-gray-600 font-mono">
+                                                                {category.color}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="text-sm text-gray-400 italic">
+                                                            N/A
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleEditLabel(
+                                                                        category
+                                                                    )
+                                                                }
+                                                                className="bg-white p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="Edit">
+                                                                <FontAwesomeIcon
+                                                                    icon={
+                                                                        faEdit
+                                                                    }
+                                                                    className="w-4 h-4"
+                                                                />
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleDeleteLabel(
+                                                                        category.id,
+                                                                        category.name
+                                                                    )
+                                                                }
+                                                                className="bg-white p-2 text-red-600 hover:bg-red-50 hover:border-red-600 rounded-lg transition-colors"
+                                                                title="Delete">
+                                                                <FontAwesomeIcon
+                                                                    icon={
+                                                                        faTrash
+                                                                    }
+                                                                    className="w-4 h-4"
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        )
+                                    )}
                                 </tbody>
                             </table>
                         </div>
