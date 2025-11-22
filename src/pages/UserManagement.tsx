@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faTrash, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { firestoreDb } from '../../config/FirebaseConfig';
 
 // Định nghĩa Interface
 interface UserData {
@@ -13,60 +15,62 @@ interface UserData {
     status: 'Active' | 'Banned';
 }
 
-// Mock Data - matching the image
-const initialUserData: UserData[] = [
-    {
-        id: '#001',
-        name: 'Sarah Johnson',
-        email: 'sarah.johnson@email.com',
-        reg_date: '15-03-2024',
-        tasks_created: 42,
-        completion_rate: '85%',
-        status: 'Active',
-    },
-    {
-        id: '#002',
-        name: 'Mike Chen',
-        email: 'mike.chen@email.com',
-        reg_date: '12-03-2024',
-        tasks_created: 28,
-        completion_rate: '65%',
-        status: 'Banned',
-    },
-    {
-        id: '#003',
-        name: 'Emily Davis',
-        email: 'emily.davis@email.com',
-        reg_date: '10-03-2024',
-        tasks_created: 56,
-        completion_rate: '92%',
-        status: 'Active',
-    },
-    {
-        id: '#004',
-        name: 'James Wilson',
-        email: 'james.wilson@email.com',
-        reg_date: '08-03-2024',
-        tasks_created: 33,
-        completion_rate: '45%',
-        status: 'Active',
-    },
-    {
-        id: '#005',
-        name: 'Lisa Brown',
-        email: 'lisa.brown@email.com',
-        reg_date: '05-03-2024',
-        tasks_created: 71,
-        completion_rate: '78%',
-        status: 'Active',
-    },
-];
-
 const UserManagement: React.FC = () => {
-    const [userData] = useState<UserData[]>(initialUserData);
+    const [userData, setUserData] = useState<UserData[]>([]);
     const [searchText, setSearchText] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<string>('All Status');
     const [currentPage, setCurrentPage] = useState<number>(1);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    // useEffect: Lắng nghe realtime users từ Firebase
+    useEffect(() => {
+        console.log('🔥 Setting up Firebase listener for users...');
+        const colRef = collection(firestoreDb, 'users');
+
+        const unsubscribe = onSnapshot(
+            colRef,
+            (snapshot) => {
+                const users = snapshot.docs.map((doc) => {
+                    const data = doc.data() as any;
+
+                    // Format registration date từ timestamp
+                    let regDate = 'N/A';
+                    if (data.joinedAt) {
+                        const date = new Date(data.joinedAt);
+                        regDate = date.toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    }
+
+                    return {
+                        id: doc.id,
+                        name: data.name || 'Unknown User',
+                        email: data['e-mail'] || data.email || 'No email',
+                        reg_date: regDate,
+                        tasks_created: data.tasks_created || 0,
+                        completion_rate: data.completion_rate || '0%',
+                        status: (data.status || 'Active') as 'Active' | 'Banned',
+                    };
+                });
+
+                console.log(`✅ Loaded ${users.length} users from Firebase:`, users);
+                setUserData(users);
+                setLoading(false);
+            },
+            (error) => {
+                console.error('❌ User snapshot error:', error);
+                setLoading(false);
+            }
+        );
+
+        // Cleanup function
+        return () => {
+            console.log('🧹 Cleaning up Firebase listener');
+            unsubscribe();
+        };
+    }, []);
 
     // Logic tìm kiếm và lọc dữ liệu
     const filteredUsers = useMemo(() => {
@@ -79,6 +83,42 @@ const UserManagement: React.FC = () => {
             return matchesSearch && matchesStatus;
         });
     }, [userData, searchText, statusFilter]);
+
+    // Pagination logic
+    const USERS_PER_PAGE = 8;
+    const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+
+    // Reset về trang 1 khi filter thay đổi
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText, statusFilter]);
+
+    // Lấy users cho trang hiện tại
+    const paginatedUsers = useMemo(() => {
+        const startIndex = (currentPage - 1) * USERS_PER_PAGE;
+        const endIndex = startIndex + USERS_PER_PAGE;
+        return filteredUsers.slice(startIndex, endIndex);
+    }, [filteredUsers, currentPage]);
+
+    // Tạo danh sách số trang để hiển thị
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = [];
+
+        if (totalPages <= 5) {
+            // Nếu <= 5 trang, hiển thị tất cả
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // Nếu > 5 trang, hiển thị 1 2 3 ... lastPage
+            pages.push(1, 2, 3);
+            if (totalPages > 3) {
+                pages.push('...');
+            }
+        }
+
+        return pages;
+    };
 
     return (
         <div className="w-full">
@@ -146,16 +186,28 @@ const UserManagement: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredUsers.length === 0 ? (
+                        {loading ? (
+                            <tr>
+                                <td
+                                    colSpan={8}
+                                    className="px-4 py-8 text-center">
+                                    <p className="text-gray-500">
+                                        Loading users from Firebase...
+                                    </p>
+                                </td>
+                            </tr>
+                        ) : filteredUsers.length === 0 ? (
                             <tr>
                                 <td
                                     colSpan={8}
                                     className="px-4 py-8 text-center text-gray-500">
-                                    No matching users found.
+                                    {searchText || statusFilter !== 'All Status'
+                                        ? 'No matching users found.'
+                                        : 'No users found in Firebase.'}
                                 </td>
                             </tr>
                         ) : (
-                            filteredUsers.map((user) => (
+                            paginatedUsers.map((user) => (
                                 <tr
                                     key={user.id}
                                     className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
@@ -210,50 +262,58 @@ const UserManagement: React.FC = () => {
                 </table>
             </div>
 
-            {/* Pagination */}
-            <div className="flex justify-center items-center gap-2 py-5">
-                <button
-                    onClick={() =>
-                        setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={currentPage === 1}
-                    className="min-w-[36px] h-9 px-3 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-100 hover:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                    &lt;
-                </button>
-                <button
-                    onClick={() => setCurrentPage(1)}
-                    className={`min-w-[36px] h-9 px-3 border rounded-md transition-all ${
-                        currentPage === 1
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:border-primary'
-                    }`}>
-                    1
-                </button>
-                <button
-                    onClick={() => setCurrentPage(2)}
-                    className={`min-w-[36px] h-9 px-3 border rounded-md transition-all ${
-                        currentPage === 2
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:border-primary'
-                    }`}>
-                    2
-                </button>
-                <button
-                    onClick={() => setCurrentPage(3)}
-                    className={`min-w-[36px] h-9 px-3 border rounded-md transition-all ${
-                        currentPage === 3
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:border-primary'
-                    }`}>
-                    3
-                </button>
-                <span className="text-gray-400 px-1">...</span>
-                <button
-                    onClick={() => setCurrentPage((prev) => prev + 1)}
-                    className="min-w-[36px] h-9 px-3 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-100 hover:border-primary transition-all">
-                    &gt;
-                </button>
-            </div>
+            {/* Pagination - Chỉ hiển thị khi có nhiều hơn 8 users */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 py-5">
+                    {/* Previous Button */}
+                    <button
+                        onClick={() =>
+                            setCurrentPage((prev) => Math.max(1, prev - 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="min-w-[36px] h-9 px-3 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-100 hover:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        &lt;
+                    </button>
+
+                    {/* Page Numbers */}
+                    {getPageNumbers().map((page, index) => {
+                        if (page === '...') {
+                            return (
+                                <span
+                                    key={`ellipsis-${index}`}
+                                    className="text-gray-400 px-1">
+                                    ...
+                                </span>
+                            );
+                        }
+
+                        return (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page as number)}
+                                className={`min-w-[36px] h-9 px-3 border rounded-md transition-all ${
+                                    currentPage === page
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:border-primary'
+                                }`}>
+                                {page}
+                            </button>
+                        );
+                    })}
+
+                    {/* Next Button */}
+                    <button
+                        onClick={() =>
+                            setCurrentPage((prev) =>
+                                Math.min(totalPages, prev + 1)
+                            )
+                        }
+                        disabled={currentPage === totalPages}
+                        className="min-w-[36px] h-9 px-3 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-100 hover:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        &gt;
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
