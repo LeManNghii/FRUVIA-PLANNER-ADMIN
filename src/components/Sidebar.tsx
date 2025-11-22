@@ -1,6 +1,6 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Đã thêm từ khóa 'type' vào IconDefinition để giải quyết lỗi Vite/Runtime
 import {
     faTachometerAlt,
     faUsers,
@@ -16,98 +16,54 @@ interface SidebarProps {
         | 'UserManagement'
         | 'TaskReports'
         | 'LabelManagement';
-    // Hàm xử lý chuyển trang
     onNavigate: (page: string) => void;
 }
 
 // Định nghĩa cấu trúc menu
 interface MenuItem {
     name: string;
-    page: SidebarProps['activePage'];
-    icon: IconDefinition; // Dùng Type đã import
+    path: string;
+    icon: IconDefinition;
 }
 
 const menuItems: MenuItem[] = [
-    { name: 'Dashboard', page: 'Dashboard', icon: faTachometerAlt },
-    { name: 'User Management', page: 'UserManagement', icon: faUsers },
-    { name: 'Task Reports', page: 'TaskReports', icon: faListCheck },
-    { name: 'Label Management', page: 'LabelManagement', icon: faTag },
+    { name: 'Dashboard', path: '/', icon: faTachometerAlt },
+    { name: 'User Management', path: '/users', icon: faUsers },
+    { name: 'Task Reports', path: '/tasks', icon: faListCheck },
+    { name: 'Label Management', path: '/labels', icon: faTag },
 ];
 
-const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate }) => {
-    // Color #266B1C is applied for the Sidebar
-    const sidebarStyle: React.CSSProperties = {
-        height: '100vh',
-        width: '250px',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        backgroundColor: '#266B1C',
-        paddingTop: '20px',
-        zIndex: 1000,
-        boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
-    };
-
-    const linkStyle: React.CSSProperties = {
-        color: '#d8ead5',
-        padding: '15px 20px',
-        textDecoration: 'none',
-        display: 'block',
-        transition: 'background-color 0.3s, color 0.3s',
-    };
-
-    const activeLinkStyle: React.CSSProperties = {
-        backgroundColor: '#3D8C2A', // Active menu item color
-        color: '#fff',
-    };
-
+const Sidebar: React.FC<SidebarProps> = () => {
     return (
-        <div style={sidebarStyle} className="d-flex flex-column">
-            <h3 className="text-white text-center mb-4 border-bottom pb-3">
+        <div className="w-[250px] h-screen bg-[#266B1C] flex flex-col shadow-lg">
+            <h3 className="text-white text-center mb-4 border-b border-white/20 pb-3 pt-5">
                 FRUVIA MANAGEMENT
             </h3>
 
-            <nav className="flex-grow-1">
-                {menuItems.map((item) => {
-                    const isActive = item.page === activePage;
-                    const combinedStyle: React.CSSProperties = {
-                        ...linkStyle,
-                        ...(isActive ? activeLinkStyle : {}),
-                    };
-
-                    return (
-                        <a
-                            key={item.page}
-                            href="#"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                onNavigate(item.page);
-                            }}
-                            className={isActive ? 'active' : ''}
-                            style={combinedStyle}
-                            onMouseEnter={(e) => {
-                                if (!isActive) {
-                                    e.currentTarget.style.backgroundColor =
-                                        '#3D8C2A';
-                                    e.currentTarget.style.color = '#fff';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isActive) {
-                                    e.currentTarget.style.backgroundColor =
-                                        'transparent';
-                                    e.currentTarget.style.color = '#d8ead5';
-                                }
-                            }}>
-                            <FontAwesomeIcon
-                                icon={item.icon}
-                                fixedWidth
-                                className="me-2"
-                            />
-                            {item.name}
-                        </a>
-                    );
-                })}
+            <nav className="flex-1">
+                {menuItems.map((item) => (
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) =>
+                            `block px-5 py-4 text-[#d8ead5] no-underline transition-all ${
+                                isActive
+                                    ? 'bg-[#3D8C2A] text-white'
+                                    : 'hover:bg-[#3D8C2A] hover:text-white'
+                            }`
+                        }>
+                        {({ isActive }) => (
+                            <>
+                                <FontAwesomeIcon
+                                    icon={item.icon}
+                                    fixedWidth
+                                    className="me-2"
+                                />
+                                {item.name}
+                            </>
+                        )}
+                    </NavLink>
+                ))}
             </nav>
         </div>
     );

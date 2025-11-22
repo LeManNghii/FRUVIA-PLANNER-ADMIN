@@ -1,62 +1,60 @@
-import React, { useState } from 'react';
-// Import các component trang
-import Dashboard from './pages/Dashboard.tsx';
-import UserManagement from './pages/UserManagement.tsx';
-import TaskReports from './pages/TaskReports.tsx';
-import LabelManagement from './pages/LabelManagement.tsx';
-// Import Sidebar component
-import Sidebar from './components/Sidebar.tsx';
-
-// Định nghĩa Type cho các trang có thể có
-type PageName =
-    | 'Dashboard'
-    | 'UserManagement'
-    | 'TaskReports'
-    | 'LabelManagement';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import UserManagement from './pages/UserManagement';
+import TaskReports from './pages/TaskReports';
+import LabelManagement from './pages/LabelManagement';
 
 const App: React.FC = () => {
-    // State để theo dõi trang hiện tại
-    const [currentPage, setCurrentPage] = useState<PageName>('Dashboard');
-
-    const renderPage = () => {
-        switch (currentPage) {
-            case 'Dashboard':
-                return <Dashboard />;
-            case 'UserManagement':
-                return <UserManagement />;
-            case 'TaskReports':
-                return <TaskReports />;
-            case 'LabelManagement':
-                return <LabelManagement />;
-            default:
-                // Xử lý trường hợp không tìm thấy trang
-                return (
-                    <h1 style={{ marginLeft: '270px', marginTop: '50px' }}>
-                        404 | Page Not Found
-                    </h1>
-                );
-        }
-    };
-
-    // Style cho phần nội dung chính
-    const mainContentStyle: React.CSSProperties = {
-        marginLeft: '250px', // Bù trừ cho Sidebar
-        padding: '20px',
-        minHeight: '100vh',
-        backgroundColor: '#ebe9e9ff', // Background trắng
-    };
-
     return (
-        <div className="d-flex">
-            {/* Component Sidebar */}
-            <Sidebar
-                activePage={currentPage}
-                onNavigate={(page) => setCurrentPage(page as PageName)}
-            />
+        <AuthProvider>
+            <BrowserRouter>
+                <Routes>
+                    {/* Login Route - No Layout */}
+                    <Route path="/login" element={<Login />} />
 
-            {/* Content Container */}
-            <div style={mainContentStyle} className="flex-grow-1">
-                {renderPage()}
+                    {/* Protected Routes - With Layout */}
+                    <Route
+                        path="/*"
+                        element={
+                            <ProtectedRoute>
+                                <AppLayout />
+                            </ProtectedRoute>
+                        }
+                    />
+                </Routes>
+            </BrowserRouter>
+        </AuthProvider>
+    );
+};
+
+// Layout Component with Sidebar and Header
+const AppLayout: React.FC = () => {
+    return (
+        <div className="flex h-screen overflow-hidden">
+            {/* Sidebar */}
+            <Sidebar activePage="Dashboard" onNavigate={() => {}} />
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Header */}
+                <Header />
+
+                {/* Page Content */}
+                <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+                    <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/users" element={<UserManagement />} />
+                        <Route path="/tasks" element={<TaskReports />} />
+                        <Route path="/labels" element={<LabelManagement />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </main>
             </div>
         </div>
     );
