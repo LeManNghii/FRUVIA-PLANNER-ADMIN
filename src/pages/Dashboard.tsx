@@ -143,13 +143,11 @@ const Dashboard: React.FC = () => {
 
     return (
         <>
-            <h1 className="mb-4">Overview Dashboard</h1>
-
             {/* KPI Cards Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 
                 {/* Total Users */}
-                <div className="bg-white rounded-xl shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-blue-600 uppercase">Total Users</p>
                         <p className="text-3xl font-bold">2,847</p>
@@ -161,7 +159,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* New Tasks */}
-                <div className="bg-white rounded-xl shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-blue-600 uppercase">New Tasks</p>
                         <p className="text-3xl font-bold">1,234</p>
@@ -173,11 +171,11 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Avg Completion Rate */}
-                <div className="bg-white rounded-xl shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-blue-600 uppercase">Avg. Completion Rate</p>
                         <p className="text-3xl font-bold">89%</p>
-                        <p className="text-red-500 text-sm">-3% from yesterday</p>
+                        <p className="text-red-500 text-sm">-3% from last week</p>
                     </div>
                     <div className="bg-gray-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faCheckCircle} className="text-purple-500 text-3xl" />
@@ -185,9 +183,9 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Daily Active Users */}
-                <div className="bg-white rounded-xl shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-blue-600 uppercase">Daily Active Users</p>
+                        <p className="text-xs font-semibold text-blue-600 uppercase">Active Users</p>
                         <p className="text-3xl font-bold">156</p>
                         <p className="text-green-600 text-sm">+5% from last month</p>
                     </div>
@@ -199,10 +197,10 @@ const Dashboard: React.FC = () => {
             </div>
             
             {/* Charts Section */}
-            <div className="row">
-                <div className="col-lg-8 mb-4">
-                    <div className="card shadow mb-4">
-                        <div className="card-header py-3">
+            <div className="grid grid-cols-2">
+                <div>
+                    <div className="card shadow mb-4 bg-white rounded-lg">
+                        <div className="card-header py-3 pl-3">
                             <h6 className="m-0 fw-bold text-primary">New User Growth Chart (Mock)</h6>
                         </div>
                         <div className="card-body" style={{ minHeight: '300px' }}>
@@ -210,9 +208,9 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-4 mb-4">
-                    <div className="card shadow mb-4">
-                        <div className="card-header py-3">
+                <div className="pl-4">
+                    <div className="card shadow mb-4 bg-white rounded-lg">
+                        <div className="card-header py-3 pl-3">
                             <h6 className="m-0 fw-bold text-primary">Task Distribution by Category</h6>
                         </div>
                         <div className="card-body" style={{ minHeight: '300px' }}>
@@ -226,34 +224,64 @@ const Dashboard: React.FC = () => {
                 </div>
             </div>
             
-            {/* Top Active Users Table */}
-            <div className="row">
-                <div className="col-12 mb-4">
-                    <div className="card shadow mb-4">
-                        <div className="card-header py-3">
-                            <h6 className="m-0 fw-bold text-primary">Top 5 Most Active Users This Month</h6>
+            {/* Top Recent Active Users Table */}
+            <div className="bg-white rounded-lg shadow px-4 mt-2">
+                <div className="card-header py-3">
+                    <h6 className="m-0 fw-bold text-primary">Top 5 Recent Active Users</h6>
+                </div>
+                <div className="p-4 space-y-3">
+                    {topUsers.map((user, index) => {
+                    // 1. Trích xuất giá trị số từ chuỗi (ví dụ: "95%" -> 95)
+                    // Dùng parseFloat để đảm bảo xử lý cả số thập phân nếu có
+                    const completionValue = parseFloat(user.completionRate); 
+
+                    // 2. Xác định class màu dựa trên giá trị
+                    let badgeClass = '';
+                    
+                    if (completionValue >= 90) {
+                    // >= 90% -> Xanh lá
+                    badgeClass = 'bg-green-500';
+                    } else if (completionValue >= 70 && completionValue < 90) {
+                    // 70% <= x < 90% -> Vàng
+                    badgeClass = 'bg-yellow-500';
+                    } else {
+                    // < 70% -> Đỏ
+                    badgeClass = 'bg-red-500';
+                    }
+
+                    return (
+                    <div
+                        key={index}
+                        className="bg-gray-100 p-3 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50 transition duration-150 shadow-sm"
+                    >
+                        {/* Cột 1: Tên Người Dùng */}
+                        <div className="flex-1 min-w-0 pr-4">
+                        <p className="text-base font-medium text-gray-800 truncate">
+                            {user.name}
+                        </p>
                         </div>
-                        <div className="card-body">
-                            <table className="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>User Name</th>
-                                        <th>Tasks Created</th>
-                                        <th>Completion Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {topUsers.map((user, index) => (
-                                        <tr key={index}>
-                                            <td>{user.name}</td>
-                                            <td>{user.tasksCreated}</td>
-                                            <td><span className={`badge ${user.badgeColor}`}>{user.completionRate}</span></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+
+                        {/* Cột 2: Tasks Created */}
+                        <div className="flex-shrink-0 mx-4 text-center hidden sm:block">
+                        <p className="text-xs text-gray-500 uppercase">Tasks</p>
+                        <p className="text-lg font-semibold text-indigo-700">
+                            {user.tasksCreated}
+                        </p>
+                        </div>
+
+                        {/* Cột 3: Completion Rate (Badge) */}
+                        <div className="flex-shrink-0 ml-4">
+                        <p className="text-xs text-gray-500 uppercase">Completed</p>
+                        <p
+                            // Áp dụng class màu đã tính toán
+                            className={`px-3 py-1 text-sm font-semibold rounded-full ${badgeClass} text-white text-center`}
+                        >
+                            {user.completionRate}
+                        </p>
                         </div>
                     </div>
+                    );
+                })}
                 </div>
             </div>
         </>
