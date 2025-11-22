@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { firestoreDb } from '../../config/FirebaseConfig';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUsers, faTasks, faPercent, faUserCheck, faCheck, faCheckCircle, faTags } from "@fortawesome/free-solid-svg-icons";
+import { faUsers, faTasks, faCheckCircle, faTags } from "@fortawesome/free-solid-svg-icons";
 import TaskDistributionPieChart from '../components/TaskDistributionPieChart';
 import {
     AreaChart,
@@ -153,7 +153,7 @@ const Dashboard: React.FC = () => {
                         <p className="text-3xl font-bold">2,847</p>
                         <p className="text-green-600 text-sm">+12% from last month</p>
                     </div>
-                    <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="bg-blue-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faUsers} className="text-blue-600 text-3xl" />
                     </div>
                 </div>
@@ -161,11 +161,11 @@ const Dashboard: React.FC = () => {
                 {/* New Tasks */}
                 <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-blue-600 uppercase">New Tasks</p>
+                        <p className="text-xs font-semibold text-green-600 uppercase">New Tasks</p>
                         <p className="text-3xl font-bold">1,234</p>
                         <p className="text-green-600 text-sm">+8% from last week</p>
                     </div>
-                    <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="bg-green-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faTasks} className="text-green-600 text-3xl" />
                     </div>
                 </div>
@@ -173,11 +173,11 @@ const Dashboard: React.FC = () => {
                 {/* Avg Completion Rate */}
                 <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-blue-600 uppercase">Avg. Completion Rate</p>
+                        <p className="text-xs font-semibold text-purple-600 uppercase">Avg. Completion Rate</p>
                         <p className="text-3xl font-bold">89%</p>
                         <p className="text-red-500 text-sm">-3% from last week</p>
                     </div>
-                    <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="bg-purple-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faCheckCircle} className="text-purple-500 text-3xl" />
                     </div>
                 </div>
@@ -185,11 +185,11 @@ const Dashboard: React.FC = () => {
                 {/* Daily Active Users */}
                 <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold text-blue-600 uppercase">Active Users</p>
+                        <p className="text-xs font-semibold text-orange-600 uppercase">Active Users</p>
                         <p className="text-3xl font-bold">156</p>
                         <p className="text-green-600 text-sm">+5% from last month</p>
                     </div>
-                    <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="bg-orange-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faTags} className="text-orange-500 text-3xl" />
                     </div>
                 </div>
@@ -209,7 +209,7 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
                 <div className="pl-4">
-                    <div className="card shadow mb-4 bg-white rounded-lg">
+                    <div className="card shadow mb-4 bg-white rounded-lg pl-4">
                         <div className="card-header py-3 pl-3">
                             <h6 className="m-0 fw-bold text-primary">Task Distribution by Category</h6>
                         </div>

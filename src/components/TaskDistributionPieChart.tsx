@@ -86,9 +86,9 @@ const TaskDistributionPieChart: React.FC<TaskDistributionPieChartProps> = ({ dat
                 
                 {/* Legend (Chú giải) hiển thị các nhãn và màu tương ứng */}
                 <Legend 
-                    layout="horizontal" 
+                    layout="vertical" 
                     verticalAlign="bottom" 
-                    align="center" 
+                    align="left" 
                 />
             </PieChart>
         </ResponsiveContainer>
