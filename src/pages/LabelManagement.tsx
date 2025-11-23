@@ -1,6 +1,6 @@
 import React, { useState, FormEvent, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { firestoreDb } from '../../config/FirebaseConfig';
 
@@ -78,25 +78,6 @@ const LabelManagement: React.FC = () => {
         console.log('Form submitted:', formData);
         alert('Chức năng thêm/sửa sẽ được implement sau!');
         resetForm();
-    };
-
-    // Hàm xóa nhãn (tạm thời chỉ log)
-    const handleDeleteLabel = (id: string, name: string) => {
-        if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
-            console.log('Delete label:', id);
-            alert('Chức năng xóa sẽ được implement sau!');
-        }
-    };
-
-    // Hàm tải dữ liệu vào form (Edit)
-    const handleEditLabel = (category: Category) => {
-        setFormData({
-            id: category.id,
-            name: category.name,
-            color: category.color,
-        });
-        // Scroll to form
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     // Hàm reset form
@@ -300,16 +281,13 @@ const LabelManagement: React.FC = () => {
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                             Usage Frequency
                                         </th>
-                                        <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                            Actions
-                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {loadingCategories ? (
                                         <tr>
                                             <td
-                                                colSpan={5}
+                                                colSpan={4}
                                                 className="px-6 py-8 text-center">
                                                 <p className="text-gray-500">
                                                     Loading data from
@@ -320,7 +298,7 @@ const LabelManagement: React.FC = () => {
                                     ) : filteredCategories.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={5}
+                                                colSpan={4}
                                                 className="px-6 py-8 text-center">
                                                 <p className="text-gray-500">
                                                     {searchTerm
@@ -373,41 +351,6 @@ const LabelManagement: React.FC = () => {
                                                         <span className="text-sm text-gray-400 italic">
                                                             N/A
                                                         </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleEditLabel(
-                                                                        category
-                                                                    )
-                                                                }
-                                                                className="bg-white p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                title="Edit">
-                                                                <FontAwesomeIcon
-                                                                    icon={
-                                                                        faEdit
-                                                                    }
-                                                                    className="w-4 h-4"
-                                                                />
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleDeleteLabel(
-                                                                        category.id,
-                                                                        category.name
-                                                                    )
-                                                                }
-                                                                className="bg-white p-2 text-red-600 hover:bg-red-50 hover:border-red-600 rounded-lg transition-colors"
-                                                                title="Delete">
-                                                                <FontAwesomeIcon
-                                                                    icon={
-                                                                        faTrash
-                                                                    }
-                                                                    className="w-4 h-4"
-                                                                />
-                                                            </button>
-                                                        </div>
                                                     </td>
                                                 </tr>
                                             )
