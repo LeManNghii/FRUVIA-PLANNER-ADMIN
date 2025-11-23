@@ -58,25 +58,53 @@ const TaskReports: React.FC = () => {
             let pending = 0;
             let overdue = 0;
 
-            const nowTime = Date.now();
+            const combineDateAndTime = (dateObj: Date, timeObj: Date): Date => {
+                // Combine local date (Y/M/D) from dateObj and local time (H/M/S/ms) from timeObj
+                const y = dateObj.getFullYear();
+                const m = dateObj.getMonth();
+                const d = dateObj.getDate();
+                const hh = timeObj.getHours();
+                const mm = timeObj.getMinutes();
+                const ss = timeObj.getSeconds();
+                const ms = timeObj.getMilliseconds();
+                return new Date(y, m, d, hh, mm, ss, ms);
+            };
 
             docs.forEach((t) => {
                 const createdAt = parseDate(t.createdAt);
-                const completedAt = parseDate(t.completedAt);
+                const dueTime = parseDate(t.dueTime);
                 const dueDate = parseDate(t.dueDate);
 
-                const isCompleted = !!completedAt || t.completed === true || String(t.completed) === 'true' || (t.status && String(t.status).toLowerCase() === 'completed');
+                const hasCompletedFlag = t.completed === true || String(t.completed) === 'true';
 
+                // Consider tasks created in the current month for KPI
                 if (createdAt && createdAt.getTime() >= startOfMonth && createdAt.getTime() <= endOfMonth) {
                     total++;
-                    if (isCompleted) completed++;
-                    else pending++;
-                }
 
-                if (dueDate) {
-                    const dt = dueDate.getTime();
-                    if (dt >= startOfMonth && dt <= endOfMonth && dt < nowTime && !isCompleted) {
-                        overdue++;
+                    if (hasCompletedFlag) {
+                        completed++;
+                    } else {
+                        // Determine deadline by combining date from dueDate and time from dueTime
+                        let compare: Date | null = null;
+                        if (dueDate && dueTime) {
+                            compare = combineDateAndTime(dueDate, dueTime);
+                        } else if (dueDate) {
+                            compare = dueDate;
+                        } else if (dueTime) {
+                            compare = dueTime;
+                        }
+
+                        if (!compare) {
+                            // No due info -> consider pending
+                            pending++;
+                        } else {
+                            const dt = compare.getTime();
+                            if (Date.now() < dt) {
+                                pending++;
+                            } else {
+                                overdue++;
+                            }
+                        }
                     }
                 }
             });
@@ -100,9 +128,20 @@ const TaskReports: React.FC = () => {
             const counts = new Array(7).fill(0);
             const msInDay = 24 * 60 * 60 * 1000;
             docs.forEach((t) => {
-                const due = parseDate(t.dueDate);
-                if (!due) return;
-                const dms = due.getTime();
+                const dueDateObj = parseDate(t.dueDate);
+                const dueTimeObj = parseDate(t.dueTime);
+                if (!dueDateObj && !dueTimeObj) return;
+
+                let deadline: Date | null = null;
+                if (dueDateObj && dueTimeObj) {
+                    deadline = combineDateAndTime(dueDateObj, dueTimeObj);
+                } else {
+                    deadline = dueDateObj || dueTimeObj;
+                }
+
+                if (!deadline) return;
+
+                const dms = deadline.getTime();
                 const diff = dms - startMs;
                 if (diff >= 0 && diff < 7 * msInDay) {
                     const idx = Math.floor(diff / msInDay);
@@ -121,40 +160,44 @@ const TaskReports: React.FC = () => {
         <>
             {/* KPI Cards Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-blue-500">
                     <div>
-                        <p className="text-xs font-semibold text-blue-600 uppercase">Total Tasks (this month)</p>
+                        <p className="text-xs font-semibold text-blue-600 uppercase">Total Tasks</p>
                         <p className="text-3xl font-bold">{kpi.total}</p>
+                        <p className="text-gray-600 text-sm">Due in this month</p>
                     </div>
                     <div className="bg-blue-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faTasks} className="text-blue-600 text-3xl" />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-green-500">
                     <div>
-                        <p className="text-xs font-semibold text-green-600 uppercase">Completed (this month)</p>
+                        <p className="text-xs font-semibold text-green-600 uppercase">Completed</p>
                         <p className="text-3xl font-bold">{kpi.completed}</p>
+                        <p className="text-gray-600 text-sm">Completed from Total</p>
                     </div>
                     <div className="bg-green-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faCheckCircle} className="text-green-600 text-3xl" />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-yellow-500">
                     <div>
-                        <p className="text-xs font-semibold text-yellow-600 uppercase">Pending (this month)</p>
+                        <p className="text-xs font-semibold text-yellow-600 uppercase">Pending</p>
                         <p className="text-3xl font-bold">{kpi.pending}</p>
+                        <p className="text-gray-600 text-sm">In progress</p>
                     </div>
                     <div className="bg-yellow-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faClock} className="text-yellow-500 text-3xl" />
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-red-500">
                     <div>
-                        <p className="text-xs font-semibold text-red-600 uppercase">Over Due (this month)</p>
+                        <p className="text-xs font-semibold text-red-600 uppercase">Over Due</p>
                         <p className="text-3xl font-bold">{kpi.overdue}</p>
+                        <p className="text-gray-600 text-sm">Past due time</p>
                     </div>
                     <div className="bg-red-100 p-3 rounded-lg">
                         <FontAwesomeIcon icon={faWarning} className="text-red-500 text-3xl" />
