@@ -194,7 +194,7 @@ const Login: React.FC = () => {
                                         onClick={() =>
                                             setShowPassword(!showPassword)
                                         }
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-white focus:outline-none">
                                         <FontAwesomeIcon
                                             icon={
                                                 showPassword
@@ -231,7 +231,7 @@ const Login: React.FC = () => {
                             {/* Submit Button */}
                             <button
                                 type="submit"
-                                className="w-full bg-[#1a5c1a] text-white py-3 rounded-lg font-medium hover:bg-[#2d7a2d] transition-colors flex items-center justify-center gap-2">
+                                className="w-full bg-[#1a5c1a] text-white py-3 rounded-lg font-medium hover:bg-[#2d7a2d] transition-colors flex items-center justify-center gap-2 focus:outline-none">
                                 Sign In
                                 <FontAwesomeIcon icon={faArrowRight} />
                             </button>

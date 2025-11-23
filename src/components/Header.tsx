@@ -44,13 +44,17 @@ const Header: React.FC = () => {
                     {/* Left side - Logo/Title */}
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">F</span>
+                            <span className="text-white font-bold text-lg">
+                                F
+                            </span>
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-900">
                                 Fruvia Planner
                             </h1>
-                            <p className="text-xs text-gray-500">Admin Dashboard</p>
+                            <p className="text-xs text-gray-500">
+                                Admin Dashboard
+                            </p>
                         </div>
                     </div>
 
@@ -58,7 +62,7 @@ const Header: React.FC = () => {
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                            className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white hover:bg-gray-50 transition-colors focus:outline-none">
                             {/* User Avatar */}
                             <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center">
                                 <FontAwesomeIcon
@@ -102,12 +106,14 @@ const Header: React.FC = () => {
                                 {/* Logout Button */}
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-red-50 transition-colors text-red-600">
+                                    className="w-full px-4 py-2.5 text-left flex items-center gap-3 bg-white hover:bg-red-50 transition-colors text-red-600 focus:outline-none">
                                     <FontAwesomeIcon
                                         icon={faSignOutAlt}
                                         className="text-sm"
                                     />
-                                    <span className="text-sm font-medium">Logout</span>
+                                    <span className="text-sm font-medium">
+                                        Logout
+                                    </span>
                                 </button>
                             </div>
                         )}
@@ -119,4 +125,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-

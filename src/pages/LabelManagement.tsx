@@ -246,7 +246,7 @@ const LabelManagement: React.FC = () => {
                             {/* Create Button */}
                             <button
                                 type="submit"
-                                className="w-full bg-primary text-white py-2.5 rounded-lg font-medium hover:bg-primary-dark transition-all shadow-sm flex items-center justify-center gap-2">
+                                className="w-full bg-primary text-white py-2.5 rounded-lg font-medium hover:bg-primary-dark transition-all shadow-sm flex items-center justify-center gap-2 focus:outline-none">
                                 <span className="text-lg">+</span>
                                 {formData.id !== null
                                     ? 'Update Label'
@@ -258,7 +258,7 @@ const LabelManagement: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={resetForm}
-                                    className="w-full mt-2 bg-gray-200 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition-all">
+                                    className="w-full mt-2 bg-gray-200 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition-all focus:outline-none">
                                     Cancel
                                 </button>
                             )}
