@@ -1,7 +1,7 @@
 import React, { useState, FormEvent, useEffect, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc } from 'firebase/firestore';
 import { firestoreDb } from '../../config/FirebaseConfig';
 
 // 1. Định nghĩa Interface
@@ -54,7 +54,7 @@ const LabelManagement: React.FC = () => {
                 setLoadingCategories(false);
             },
             (err) => {
-                console.error('❌ Category snapshot error:', err);
+                console.error('Category snapshot error:', err);
                 setLoadingCategories(false);
             }
         );
@@ -72,12 +72,39 @@ const LabelManagement: React.FC = () => {
         setFormData((prev) => ({ ...prev, [id]: value }));
     };
 
-    // Hàm xử lý Submit Form (tạm thời chỉ log, chưa save vào Firebase)
-    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    // Hàm xử lý Submit Form - Thêm label mới vào Firebase
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
-        alert('Chức năng thêm/sửa sẽ được implement sau!');
-        resetForm();
+
+        // Validation
+        if (!formData.name.trim()) {
+            alert('Please enter a label name!');
+            return;
+        }
+
+        if (!formData.color) {
+            alert('Please select a color!');
+            return;
+        }
+
+        try {
+            console.log('Adding new label to Firebase:', formData);
+
+            // Thêm document mới vào collection 'category'
+            const docRef = await addDoc(collection(firestoreDb, 'category'), {
+                title: formData.name.trim(),
+                color: formData.color,
+            });
+
+            console.log('Label added successfully with ID:', docRef.id);
+            alert(`Label "${formData.name}" added successfully!`);
+
+            // Reset form sau khi thêm thành công
+            resetForm();
+        } catch (error) {
+            console.error('Error adding label:', error);
+            alert('Failed to add label. Please try again.');
+        }
     };
 
     // Hàm reset form
