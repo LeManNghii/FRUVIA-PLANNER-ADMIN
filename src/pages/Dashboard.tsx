@@ -197,9 +197,9 @@ const Dashboard: React.FC = () => {
             </div>
             
             {/* Charts Section */}
-            <div className="grid grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <div className="card shadow mb-4 bg-white rounded-lg">
+                     <div className="card shadow mb-4 bg-white rounded-lg">
                         <div className="card-header py-3 pl-3">
                             <h6 className="m-0 fw-bold text-primary">New User Growth Chart (Mock)</h6>
                         </div>
@@ -208,8 +208,8 @@ const Dashboard: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className="pl-4">
-                    <div className="card shadow mb-4 bg-white rounded-lg pl-4">
+                <div>
+                     <div className="card shadow mb-4 bg-white rounded-lg">
                         <div className="card-header py-3 pl-3">
                             <h6 className="m-0 fw-bold text-primary">Task Distribution by Category</h6>
                         </div>

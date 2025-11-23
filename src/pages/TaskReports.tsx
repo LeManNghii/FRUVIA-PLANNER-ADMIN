@@ -58,25 +58,53 @@ const TaskReports: React.FC = () => {
             let pending = 0;
             let overdue = 0;
 
-            const nowTime = Date.now();
+            const combineDateAndTime = (dateObj: Date, timeObj: Date): Date => {
+                // Combine local date (Y/M/D) from dateObj and local time (H/M/S/ms) from timeObj
+                const y = dateObj.getFullYear();
+                const m = dateObj.getMonth();
+                const d = dateObj.getDate();
+                const hh = timeObj.getHours();
+                const mm = timeObj.getMinutes();
+                const ss = timeObj.getSeconds();
+                const ms = timeObj.getMilliseconds();
+                return new Date(y, m, d, hh, mm, ss, ms);
+            };
 
             docs.forEach((t) => {
                 const createdAt = parseDate(t.createdAt);
-                const completedAt = parseDate(t.completedAt);
+                const dueTime = parseDate(t.dueTime);
                 const dueDate = parseDate(t.dueDate);
 
-                const isCompleted = !!completedAt || t.completed === true || String(t.completed) === 'true' || (t.status && String(t.status).toLowerCase() === 'completed');
+                const hasCompletedFlag = t.completed === true || String(t.completed) === 'true';
 
+                // Consider tasks created in the current month for KPI
                 if (createdAt && createdAt.getTime() >= startOfMonth && createdAt.getTime() <= endOfMonth) {
                     total++;
-                    if (isCompleted) completed++;
-                    else pending++;
-                }
 
-                if (dueDate) {
-                    const dt = dueDate.getTime();
-                    if (dt >= startOfMonth && dt <= endOfMonth && dt < nowTime && !isCompleted) {
-                        overdue++;
+                    if (hasCompletedFlag) {
+                        completed++;
+                    } else {
+                        // Determine deadline by combining date from dueDate and time from dueTime
+                        let compare: Date | null = null;
+                        if (dueDate && dueTime) {
+                            compare = combineDateAndTime(dueDate, dueTime);
+                        } else if (dueDate) {
+                            compare = dueDate;
+                        } else if (dueTime) {
+                            compare = dueTime;
+                        }
+
+                        if (!compare) {
+                            // No due info -> consider pending
+                            pending++;
+                        } else {
+                            const dt = compare.getTime();
+                            if (Date.now() < dt) {
+                                pending++;
+                            } else {
+                                overdue++;
+                            }
+                        }
                     }
                 }
             });
@@ -100,9 +128,20 @@ const TaskReports: React.FC = () => {
             const counts = new Array(7).fill(0);
             const msInDay = 24 * 60 * 60 * 1000;
             docs.forEach((t) => {
-                const due = parseDate(t.dueDate);
-                if (!due) return;
-                const dms = due.getTime();
+                const dueDateObj = parseDate(t.dueDate);
+                const dueTimeObj = parseDate(t.dueTime);
+                if (!dueDateObj && !dueTimeObj) return;
+
+                let deadline: Date | null = null;
+                if (dueDateObj && dueTimeObj) {
+                    deadline = combineDateAndTime(dueDateObj, dueTimeObj);
+                } else {
+                    deadline = dueDateObj || dueTimeObj;
+                }
+
+                if (!deadline) return;
+
+                const dms = deadline.getTime();
                 const diff = dms - startMs;
                 if (diff >= 0 && diff < 7 * msInDay) {
                     const idx = Math.floor(diff / msInDay);
