@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { firestoreDb } from '../../config/FirebaseConfig';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUsers, faTasks, faCheckCircle, faChartLine, faTag } from "@fortawesome/free-solid-svg-icons";
+import { faUsers, faTasks, faCheckCircle, faChartLine, faTags } from "@fortawesome/free-solid-svg-icons";
 import TaskDistributionPieChart from '../components/TaskDistributionPieChart';
 import {
     AreaChart,
@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
             categoryCounts.set(catKey, (categoryCounts.get(catKey) || 0) + 1);
         });
         
-        // --- D. Tính toán New User Growth Chart Data (MỚI) ---
+        // --- D. Tính toán New User Growth Chart Data (Giữ nguyên) ---
         users.forEach((u) => {
             const userCreateDate = parseDate(u.startDateTs); 
             
@@ -286,7 +286,7 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 
                 {/* 1. Total Users */}
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-blue-500">
                     <div>
                         <p className="text-xs font-semibold text-blue-600 uppercase">Total Users</p>
                         <p className="text-3xl font-bold">{kpi.totalUsers}</p>
@@ -298,9 +298,9 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* 2. New Tasks (This Month) */}
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-green-500">
                     <div>
-                        <p className="text-xs font-semibold text-green-600 uppercase">New Tasks (This Month)</p>
+                        <p className="text-xs font-semibold text-green-600 uppercase">New Tasks</p>
                         <p className="text-3xl font-bold">{kpi.newTasks}</p>
                         <p className="text-gray-600 text-sm">tasks created since month start</p>
                     </div>
@@ -310,7 +310,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* 3. Avg Completion Rate (By Due Date) */}
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-purple-500">
                     <div>
                         <p className="text-xs font-semibold text-purple-600 uppercase">Avg. Completion Rate</p>
                         <p className="text-3xl font-bold">{kpi.avgCompletionRate}%</p>
@@ -322,14 +322,14 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* 4. Active Users (This Month) */}
-                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                <div className="bg-white rounded-lg shadow p-4 flex items-center justify-between border-l-4 border-orange-500">
                     <div>
                         <p className="text-xs font-semibold text-orange-600 uppercase">Active Users</p>
                         <p className="text-3xl font-bold">{kpi.activeUsers}</p>
                         <p className="text-gray-600 text-sm">created tasks this month</p>
                     </div>
                     <div className="bg-orange-100 p-3 rounded-lg">
-                        <FontAwesomeIcon icon={faTag} className="text-orange-500 text-3xl" />
+                        <FontAwesomeIcon icon={faTags} className="text-orange-500 text-3xl" />
                     </div>
                 </div>
 
@@ -337,7 +337,7 @@ const Dashboard: React.FC = () => {
             
             {/* Charts Section */}
             <div className="grid grid-cols-2 gap-4">
-                {/* New User Growth Chart (MỚI) */}
+                {/* New User Growth Chart */}
                 <div>
                      <div className="card shadow mb-4 bg-white rounded-lg">
                         <div className="card-header py-3 pl-3">
@@ -357,7 +357,7 @@ const Dashboard: React.FC = () => {
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="day" label={{ value: 'Day of Month', position: 'bottom' }} />
-                                        <YAxis allowDecimals={false} label={{ value: 'New Users', angle: -90, position: 'left' }}/>
+                                        <YAxis allowDecimals={false}/>
                                         <Tooltip />
                                         <Area type="monotone" dataKey="count" stroke="#2ecc71" fillOpacity={1} fill="url(#colorUserCount)" />
                                     </AreaChart>
@@ -372,7 +372,7 @@ const Dashboard: React.FC = () => {
                         <div className="card-header py-3 pl-3">
                             <h6 className="m-0 fw-bold text-primary">Task Distribution by Category</h6>
                         </div>
-                        <div className="card-body" style={{ minHeight: '300px' }}>
+                        <div className="card-body pl-3" style={{ minHeight: '300px' }}>
                             {pieData.reduce((s, p) => s + p.value, 0) === 0 ? (
                                 <p className="text-center text-muted pt-5">No task distribution data available.</p>
                             ) : (
@@ -393,38 +393,54 @@ const Dashboard: React.FC = () => {
                         <p className="text-center text-muted pt-3">No tasks due this month were found.</p>
                     ) : (
                         topUsersData.map((user, index) => {
+                            // Tính toán tỷ lệ phần trăm hoàn thành
+                            const completionPercentage = user.tasksDue === 0 
+                                ? 0 
+                                : Math.round((user.completedDue / user.tasksDue) * 100);
 
-                        return (
-                        <div
-                            key={user.id}
-                            className="bg-gray-100 p-3 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50 transition duration-150 shadow-sm"
-                        >
-                            {/* Cột 1: Tên Người Dùng */}
-                            <div className="flex-1 min-w-0 pr-4">
-                            <p className="text-base font-medium text-gray-800 truncate">
-                                {user.name}
-                            </p>
-                            <p className="text-xs text-gray-500">User ID: {user.id}</p>
-                            </div>
+                            return (
+                                <div
+                                    key={user.id}
+                                    className="bg-gray-100 p-3 rounded-lg border border-gray-200 flex items-center justify-between hover:bg-gray-50 transition duration-150 shadow-sm"
+                                >
+                                    {/* Cột 1: Tên Người Dùng + Progress Bar */}
+                                    <div className="flex-1 min-w-0 pr-4">
+                                        <p className="text-base font-medium text-orange-700 truncate">
+                                            {user.name}
+                                        </p>
+                                        
+                                        {/* Progress Bar */}
+                                        <div className="mt-1 flex items-center">
+                                            <div className="w-full bg-gray-300 rounded-full h-2.5">
+                                                <div 
+                                                    className="bg-purple-600 h-2.5 rounded-full" 
+                                                    style={{ width: `${completionPercentage}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="ml-2 text-xs font-semibold text-gray-700">
+                                                {completionPercentage}%
+                                            </span>
+                                        </div>
+                                    </div>
 
-                            {/* Cột 2: Tasks (Due this Month) */}
-                            <div className="flex-shrink-0 mx-4 text-center">
-                            <p className="text-xs text-gray-500 uppercase">Tasks</p>
-                            <p className="text-lg font-semibold text-indigo-700">
-                                {user.tasksDue}
-                            </p>
-                            </div>
+                                    {/* Cột 2: Tasks (Due this Month) */}
+                                    <div className="flex-shrink-0 mx-4 text-center">
+                                        <p className="text-xs text-gray-500 uppercase">Tasks</p>
+                                        <p className="text-lg font-semibold text-indigo-700">
+                                            {user.tasksDue}
+                                        </p>
+                                    </div>
 
-                            {/* Cột 3: Completed Task Count */}
-                            <div className="flex-shrink-0 mx-4 text-center">
-                            <p className="text-xs text-gray-500 uppercase">Completed</p>
-                            <p className="text-lg font-semibold text-purple-700">
-                                {user.completedDue}
-                            </p>
-                            </div>
-                        </div>
-                        );
-                    }))}
+                                    {/* Cột 3: Completed Task Count */}
+                                    <div className="flex-shrink-0 mx-4 text-center">
+                                        <p className="text-xs text-gray-500 uppercase">Completed</p>
+                                        <p className="text-lg font-semibold text-green-700">
+                                            {user.completedDue}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        }))}
                 </div>
             </div>
         </>
