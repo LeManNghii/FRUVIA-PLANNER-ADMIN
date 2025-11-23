@@ -46,11 +46,9 @@ const Sidebar: React.FC<SidebarProps> = () => {
                         key={item.path}
                         to={item.path}
                         className={({ isActive }) =>
-                            `block px-5 py-4 text-[#d8ead5] no-underline transition-all ${
-                                isActive
-                                    ? 'bg-[#3D8C2A] text-white'
-                                    : 'hover:bg-[#3D8C2A] hover:text-white'
-                            }`
+                            isActive
+                                ? 'block px-5 py-4 text-white no-underline bg-[#3D8C2A] pointer-events-none'
+                                : 'block px-5 py-4 text-[#d8ead5] no-underline transition-all hover:bg-[#3D8C2A] hover:text-white'
                         }>
                         {({ isActive }) => (
                             <>
