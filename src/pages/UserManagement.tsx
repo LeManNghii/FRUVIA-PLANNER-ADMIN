@@ -15,47 +15,63 @@ interface UserData {
     status: 'Active' | 'Banned';
 }
 
+// Interface cho Task
+interface TaskDoc {
+    id: string;
+    createdBy?: string;
+    completed?: boolean | string;
+}
+
 const UserManagement: React.FC = () => {
     const [userData, setUserData] = useState<UserData[]>([]);
+    const [tasks, setTasks] = useState<TaskDoc[]>([]);
     const [searchText, setSearchText] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<string>('All Status');
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [loading, setLoading] = useState<boolean>(true);
 
-    // useEffect: Lắng nghe realtime users từ Firebase
+    // useEffect 1: Lắng nghe realtime users và tasks từ Firebase
     useEffect(() => {
-        console.log('🔥 Setting up Firebase listener for users...');
-        const colRef = collection(firestoreDb, 'users');
+        console.log('🔥 Setting up Firebase listeners for users and tasks...');
 
-        const unsubscribe = onSnapshot(
-            colRef,
+        // Listen to users collection
+        const usersColRef = collection(firestoreDb, 'users');
+        const unsubscribeUsers = onSnapshot(
+            usersColRef,
             (snapshot) => {
                 const users = snapshot.docs.map((doc) => {
                     const data = doc.data() as any;
 
-                    // Format registration date từ timestamp
+                    // Format registration date - Sử dụng startDate (đã có sẵn định dạng dd/mm/yyyy)
                     let regDate = 'N/A';
-                    if (data.joinedAt) {
-                        const date = new Date(data.joinedAt);
-                        regDate = date.toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        });
+                    if (data.startDate) {
+                        regDate = data.startDate;
+                    } else if (data.startDateTs) {
+                        // Fallback: Nếu không có startDate, dùng startDateTs
+                        const date = new Date(data.startDateTs);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(
+                            2,
+                            '0'
+                        );
+                        const year = date.getFullYear();
+                        regDate = `${day}/${month}/${year}`;
                     }
 
                     return {
                         id: doc.id,
                         name: data.name || 'Unknown User',
-                        email: data['e-mail'] || data.email || 'No email',
+                        email: data.email || 'No email',
                         reg_date: regDate,
-                        tasks_created: data.tasks_created || 0,
-                        completion_rate: data.completion_rate || '0%',
-                        status: (data.status || 'Active') as 'Active' | 'Banned',
+                        tasks_created: 0, // Sẽ tính toán sau
+                        completion_rate: '0%', // Sẽ tính toán sau
+                        status: (data.status || 'Active') as
+                            | 'Active'
+                            | 'Banned',
                     };
                 });
 
-                console.log(`✅ Loaded ${users.length} users from Firebase:`, users);
+                console.log(`✅ Loaded ${users.length} users from Firebase`);
                 setUserData(users);
                 setLoading(false);
             },
@@ -65,12 +81,103 @@ const UserManagement: React.FC = () => {
             }
         );
 
+        // Listen to tasks collection
+        const tasksColRef = collection(firestoreDb, 'tasks');
+        const unsubscribeTasks = onSnapshot(
+            tasksColRef,
+            (snapshot) => {
+                const tasksData = snapshot.docs.map(
+                    (doc) =>
+                        ({
+                            id: doc.id,
+                            ...(doc.data() as any),
+                        } as TaskDoc)
+                );
+
+                console.log(
+                    `✅ Loaded ${tasksData.length} tasks from Firebase`
+                );
+                setTasks(tasksData);
+            },
+            (error) => {
+                console.error('❌ Tasks snapshot error:', error);
+            }
+        );
+
         // Cleanup function
         return () => {
-            console.log('🧹 Cleaning up Firebase listener');
-            unsubscribe();
+            console.log('🧹 Cleaning up Firebase listeners');
+            unsubscribeUsers();
+            unsubscribeTasks();
         };
     }, []);
+
+    // useEffect 2: Tính toán tasks_created và completion_rate cho mỗi user
+    useEffect(() => {
+        if (userData.length === 0 || tasks.length === 0) return;
+
+        console.log(
+            '📊 Calculating tasks_created and completion_rate for each user...'
+        );
+
+        // Tạo Map để đếm tasks cho mỗi user
+        const userTasksMap = new Map<
+            string,
+            { total: number; completed: number }
+        >();
+
+        // Đếm tasks cho mỗi user
+        tasks.forEach((task) => {
+            if (!task.createdBy) return;
+
+            const userId = task.createdBy;
+            const current = userTasksMap.get(userId) || {
+                total: 0,
+                completed: 0,
+            };
+
+            current.total++;
+
+            // Kiểm tra task đã hoàn thành
+            const isCompleted =
+                task.completed === true || String(task.completed) === 'true';
+            if (isCompleted) {
+                current.completed++;
+            }
+
+            userTasksMap.set(userId, current);
+        });
+
+        // Cập nhật userData với tasks_created và completion_rate
+        setUserData((prevUsers) =>
+            prevUsers.map((user) => {
+                const userTasks = userTasksMap.get(user.id);
+
+                if (!userTasks) {
+                    return {
+                        ...user,
+                        tasks_created: 0,
+                        completion_rate: '0%',
+                    };
+                }
+
+                const completionRate =
+                    userTasks.total === 0
+                        ? 0
+                        : Math.round(
+                              (userTasks.completed / userTasks.total) * 100
+                          );
+
+                return {
+                    ...user,
+                    tasks_created: userTasks.total,
+                    completion_rate: `${completionRate}%`,
+                };
+            })
+        );
+
+        console.log('✅ Tasks calculation completed');
+    }, [userData.length, tasks]);
 
     // Logic tìm kiếm và lọc dữ liệu
     const filteredUsers = useMemo(() => {
@@ -160,7 +267,7 @@ const UserManagement: React.FC = () => {
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
-                                ID
+                                No.
                             </th>
                             <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
                                 User Name
@@ -207,56 +314,66 @@ const UserManagement: React.FC = () => {
                                 </td>
                             </tr>
                         ) : (
-                            paginatedUsers.map((user) => (
-                                <tr
-                                    key={user.id}
-                                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <td className="px-4 py-4 text-sm text-gray-600 font-medium">
-                                        {user.id}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-900 font-semibold">
-                                        {user.name}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-600">
-                                        {user.email}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                        {user.reg_date}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                        {user.tasks_created}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm text-gray-900">
-                                        {user.completion_rate}
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <span
-                                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                                                user.status === 'Active'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'
-                                            }`}>
-                                            {user.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <div className="flex gap-2">
-                                            <button
-                                                className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
-                                                title="View Details">
-                                                <FontAwesomeIcon icon={faEye} />
-                                            </button>
-                                            <button
-                                                className="w-8 h-8 flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all"
-                                                title="Delete User">
-                                                <FontAwesomeIcon
-                                                    icon={faTrash}
-                                                />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                            paginatedUsers.map((user, index) => {
+                                // Tính số thứ tự dựa trên trang hiện tại
+                                const rowNumber =
+                                    (currentPage - 1) * USERS_PER_PAGE +
+                                    index +
+                                    1;
+
+                                return (
+                                    <tr
+                                        key={user.id}
+                                        className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-4 text-sm text-gray-600 font-medium">
+                                            {rowNumber}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-gray-900 font-semibold">
+                                            {user.name}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-gray-600">
+                                            {user.email}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                            {user.reg_date}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                            {user.tasks_created}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-gray-900">
+                                            {user.completion_rate}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <span
+                                                className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                                                    user.status === 'Active'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                {user.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
+                                                    title="View Details">
+                                                    <FontAwesomeIcon
+                                                        icon={faEye}
+                                                    />
+                                                </button>
+                                                <button
+                                                    className="w-8 h-8 flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                                                    title="Delete User">
+                                                    <FontAwesomeIcon
+                                                        icon={faTrash}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
