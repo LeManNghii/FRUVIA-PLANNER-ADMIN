@@ -7,7 +7,7 @@ import {
     faSignOutAlt,
     faChevronDown,
 } from '@fortawesome/free-solid-svg-icons';
-
+import LogoFuria from '../assets/Logo.png';
 const Header: React.FC = () => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -43,14 +43,14 @@ const Header: React.FC = () => {
                 <div className="flex items-center justify-between">
                     {/* Left side - Logo/Title */}
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">
-                                F
-                            </span>
+                        <div className="w-16 h-16  rounded-lg flex items-center justify-center">
+                            <img src={LogoFuria} alt="Logo" />
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-gray-900">
-                                Fruvia Planner
+                                <span className="text-[#b0c779]">Fru</span>
+                                <span className="text-[#f09858]">via</span>
+                                <span className="text-[#525252]"> Planner</span>
                             </h1>
                             <p className="text-xs text-gray-500">
                                 Admin Dashboard
