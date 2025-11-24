@@ -1,9 +1,10 @@
 import React, { useState, FormEvent } from 'react';
+import LogoFuria from '../assets/LogoFurivaPlanner.png';
+
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faShieldAlt,
     faLock,
     faChartLine,
     faUsers,
@@ -45,39 +46,22 @@ const Login: React.FC = () => {
                 <div className="relative z-10 text-center max-w-md">
                     {/* Logo */}
                     <div className="mb-8 flex flex-col items-center">
-                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-4">
-                            <FontAwesomeIcon
-                                icon={faShieldAlt}
-                                className="text-[#1a5c1a] text-xl"
-                            />
-                        </div>
+                        <img
+                            src={LogoFuria}
+                            alt="Logo"
+                            className="w-32 h-auto"
+                        />
+
                         <h1 className="text-3xl font-bold mb-2">
-                            Admin Portal
+                            Admin Fruvia Planner
                         </h1>
                         <p className="text-white/80 text-base">
-                            Secure access to your dashboard
+                            Access to your dashboard
                         </p>
                     </div>
 
                     {/* Features */}
                     <div className="space-y-5">
-                        <div className="flex items-start gap-3 text-left">
-                            <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <FontAwesomeIcon
-                                    icon={faLock}
-                                    className="text-lg"
-                                />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-base mb-1">
-                                    Enhanced Security
-                                </h3>
-                                <p className="text-white/70 text-sm">
-                                    Multi-layer protection for your data
-                                </p>
-                            </div>
-                        </div>
-
                         <div className="flex items-start gap-3 text-left">
                             <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <FontAwesomeIcon
@@ -221,11 +205,6 @@ const Login: React.FC = () => {
                                         Remember me
                                     </span>
                                 </label>
-                                <a
-                                    href="#"
-                                    className="text-sm text-[#1a5c1a] hover:underline">
-                                    Forgot password?
-                                </a>
                             </div>
 
                             {/* Submit Button */}
@@ -236,35 +215,6 @@ const Login: React.FC = () => {
                                 <FontAwesomeIcon icon={faArrowRight} />
                             </button>
                         </form>
-
-                        {/* Secure Login Notice */}
-                        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                            <div className="flex items-start gap-3">
-                                <FontAwesomeIcon
-                                    icon={faShieldAlt}
-                                    className="text-[#1a5c1a] mt-0.5"
-                                />
-                                <div>
-                                    <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                                        Secure Login
-                                    </h4>
-                                    <p className="text-xs text-gray-600">
-                                        Your connection is encrypted and secure.
-                                        We never store your login credentials.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="text-center mt-6">
-                        <p className="text-sm text-gray-600">Need help?</p>
-                        <a
-                            href="#"
-                            className="text-sm text-[#1a5c1a] font-medium hover:underline">
-                            Contact Support
-                        </a>
                     </div>
                 </div>
             </div>
