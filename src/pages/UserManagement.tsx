@@ -115,7 +115,6 @@ const UserManagement: React.FC = () => {
     // useEffect 2: Tính toán tasks_created và completion_rate cho mỗi user
     useEffect(() => {
         // If we don't have any users yet, nothing to compute.
-        // We still want to compute when `tasks` is empty so users show 0%.
         if (userData.length === 0) return;
 
         console.log(
@@ -151,35 +150,40 @@ const UserManagement: React.FC = () => {
         });
 
         // Cập nhật userData với tasks_created và completion_rate
-        setUserData((prevUsers) =>
-            prevUsers.map((user) => {
+        setUserData((prevUsers) => {
+            let changed = false;
+
+            const updated = prevUsers.map((user) => {
                 const userTasks = userTasksMap.get(user.id);
 
-                if (!userTasks) {
+                const tasksCreated = userTasks ? userTasks.total : 0;
+                const completionRateNumber =
+                    tasksCreated === 0
+                        ? 0
+                        : Math.round((userTasks!.completed / tasksCreated) * 100);
+                const completionRate = `${completionRateNumber}%`;
+
+                if (
+                    user.tasks_created !== tasksCreated ||
+                    user.completion_rate !== completionRate
+                ) {
+                    changed = true;
                     return {
                         ...user,
-                        tasks_created: 0,
-                        completion_rate: '0%',
+                        tasks_created: tasksCreated,
+                        completion_rate: completionRate,
                     };
                 }
 
-                const completionRate =
-                    userTasks.total === 0
-                        ? 0
-                        : Math.round(
-                              (userTasks.completed / userTasks.total) * 100
-                          );
+                return user;
+            });
 
-                return {
-                    ...user,
-                    tasks_created: userTasks.total,
-                    completion_rate: `${completionRate}%`,
-                };
-            })
-        );
+            // Only update state if something actually changed to avoid loops
+            return changed ? updated : prevUsers;
+        });
 
         console.log('✅ Tasks calculation completed');
-    }, [userData, tasks]);
+    }, [userData.length, tasks]);
 
     // Logic tìm kiếm và lọc dữ liệu
     const filteredUsers = useMemo(() => {

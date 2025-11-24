@@ -9,12 +9,22 @@ interface Category {
     id: string; // Document ID từ Firebase
     name: string; // Từ field "title" trong Firebase
     color: string; // Từ field "color" trong Firebase
+    usage?: number; // Số lượng task đang sử dụng label này
+}
+
+// Interface cho Task (chỉ khai báo những field cần thiết)
+interface TaskDoc {
+    id: string;
+    category?: string | string[];
+    [key: string]: any;
 }
 
 const LabelManagement: React.FC = () => {
     // State quản lý categories/labels từ Firebase
     const [categories, setCategories] = useState<Category[]>([]);
     const [loadingCategories, setLoadingCategories] = useState<boolean>(true);
+    // State tasks để tính Usage Frequency
+    const [tasks, setTasks] = useState<TaskDoc[]>([]);
 
     // State search
     const [searchTerm, setSearchTerm] = useState<string>('');
@@ -63,6 +73,32 @@ const LabelManagement: React.FC = () => {
         return () => {
             console.log('🧹 Cleaning up Firebase listener');
             unsub();
+        };
+    }, []);
+
+    // useEffect: Lắng nghe realtime tasks từ Firebase để tính Usage Frequency
+    useEffect(() => {
+        console.log('🔥 Setting up Firebase listener for tasks...');
+        const tasksRef = collection(firestoreDb, 'tasks');
+
+        const unsubTasks = onSnapshot(
+            tasksRef,
+            (snapshot) => {
+                const items = snapshot.docs.map((d) => ({
+                    id: d.id,
+                    ...(d.data() as Partial<TaskDoc>),
+                }));
+                console.log(`✅ Loaded ${items.length} tasks from Firebase`);
+                setTasks(items);
+            },
+            (err) => {
+                console.error('Tasks snapshot error:', err);
+            }
+        );
+
+        return () => {
+            console.log('🧹 Cleaning up tasks listener');
+            unsubTasks();
         };
     }, []);
 
@@ -116,17 +152,40 @@ const LabelManagement: React.FC = () => {
         });
     };
 
-    // Filter categories theo search term
+    // Tính Usage Frequency dựa trên tasks và lọc theo search term
     const filteredCategories = useMemo(() => {
-        if (!searchTerm.trim()) return categories;
+        // Build usage map: label name -> count
+        const usageMap = new Map<string, number>();
+        tasks.forEach((t) => {
+            const cat = t.category;
+            if (!cat) return;
+
+            // If category stored as string
+            if (typeof cat === 'string') {
+                usageMap.set(cat, (usageMap.get(cat) || 0) + 1);
+            }
+
+            // If category stored as array of strings
+            if (Array.isArray(cat)) {
+                cat.forEach((c) => usageMap.set(c, (usageMap.get(c) || 0) + 1));
+            }
+        });
+
+        // Map categories to include usage count
+        const categoriesWithUsage = categories.map((cat) => ({
+            ...cat,
+            usage: usageMap.get(cat.name) || 0,
+        }));
+
+        if (!searchTerm.trim()) return categoriesWithUsage;
 
         const lowerSearch = searchTerm.toLowerCase();
-        return categories.filter(
+        return categoriesWithUsage.filter(
             (cat) =>
                 cat.name.toLowerCase().includes(lowerSearch) ||
                 cat.color.toLowerCase().includes(lowerSearch)
         );
-    }, [categories, searchTerm]);
+    }, [categories, tasks, searchTerm]);
 
     const predefinedColors = [
         '#EF4444',
@@ -375,8 +434,9 @@ const LabelManagement: React.FC = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className="text-sm text-gray-400 italic">
-                                                            N/A
+                                                        <span className="text-sm text-gray-700">
+                                                            {category.usage ??
+                                                                0}
                                                         </span>
                                                     </td>
                                                 </tr>
