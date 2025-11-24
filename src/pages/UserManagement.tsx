@@ -160,7 +160,9 @@ const UserManagement: React.FC = () => {
                 const completionRateNumber =
                     tasksCreated === 0
                         ? 0
-                        : Math.round((userTasks!.completed / tasksCreated) * 100);
+                        : Math.round(
+                              (userTasks!.completed / tasksCreated) * 100
+                          );
                 const completionRate = `${completionRateNumber}%`;
 
                 if (
