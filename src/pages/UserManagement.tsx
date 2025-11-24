@@ -26,13 +26,12 @@ const UserManagement: React.FC = () => {
     const [userData, setUserData] = useState<UserData[]>([]);
     const [tasks, setTasks] = useState<TaskDoc[]>([]);
     const [searchText, setSearchText] = useState<string>('');
-    const [statusFilter, setStatusFilter] = useState<string>('All Status');
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [loading, setLoading] = useState<boolean>(true);
 
     // useEffect 1: Lắng nghe realtime users và tasks từ Firebase
     useEffect(() => {
-        console.log('🔥 Setting up Firebase listeners for users and tasks...');
+        console.log('Setting up Firebase listeners for users and tasks...');
 
         // Listen to users collection
         const usersColRef = collection(firestoreDb, 'users');
@@ -63,20 +62,20 @@ const UserManagement: React.FC = () => {
                         name: data.name || 'Unknown User',
                         email: data.email || 'No email',
                         reg_date: regDate,
-                        tasks_created: 0, // Sẽ tính toán sau
-                        completion_rate: '0%', // Sẽ tính toán sau
+                        tasks_created: 0,
+                        completion_rate: '0%',
                         status: (data.status || 'Active') as
                             | 'Active'
                             | 'Banned',
                     };
                 });
 
-                console.log(`✅ Loaded ${users.length} users from Firebase`);
+                console.log(`Loaded ${users.length} users from Firebase`);
                 setUserData(users);
                 setLoading(false);
             },
             (error) => {
-                console.error('❌ User snapshot error:', error);
+                console.error('User snapshot error:', error);
                 setLoading(false);
             }
         );
@@ -94,19 +93,17 @@ const UserManagement: React.FC = () => {
                         } as TaskDoc)
                 );
 
-                console.log(
-                    `✅ Loaded ${tasksData.length} tasks from Firebase`
-                );
+                console.log(`Loaded ${tasksData.length} tasks from Firebase`);
                 setTasks(tasksData);
             },
             (error) => {
-                console.error('❌ Tasks snapshot error:', error);
+                console.error('Tasks snapshot error:', error);
             }
         );
 
         // Cleanup function
         return () => {
-            console.log('🧹 Cleaning up Firebase listeners');
+            console.log('Cleaning up Firebase listeners');
             unsubscribeUsers();
             unsubscribeTasks();
         };
@@ -118,7 +115,7 @@ const UserManagement: React.FC = () => {
         if (userData.length === 0) return;
 
         console.log(
-            '📊 Calculating tasks_created and completion_rate for each user...'
+            'Calculating tasks_created and completion_rate for each user...'
         );
 
         // Tạo Map để đếm tasks cho mỗi user
@@ -193,11 +190,9 @@ const UserManagement: React.FC = () => {
             const matchesSearch =
                 user.name.toLowerCase().includes(searchText.toLowerCase()) ||
                 user.email.toLowerCase().includes(searchText.toLowerCase());
-            const matchesStatus =
-                statusFilter === 'All Status' || user.status === statusFilter;
-            return matchesSearch && matchesStatus;
+            return matchesSearch;
         });
-    }, [userData, searchText, statusFilter]);
+    }, [userData, searchText]);
 
     // Pagination logic
     const USERS_PER_PAGE = 8;
@@ -206,7 +201,7 @@ const UserManagement: React.FC = () => {
     // Reset về trang 1 khi filter thay đổi
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchText, statusFilter]);
+    }, [searchText]);
 
     // Lấy users cho trang hiện tại
     const paginatedUsers = useMemo(() => {
@@ -254,18 +249,6 @@ const UserManagement: React.FC = () => {
                             className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         />
                     </div>
-
-                    {/* Status Filter */}
-                    <div>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white cursor-pointer focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgdmlld0JveD0iMCAwIDEyIDEyIj48cGF0aCBmaWxsPSIjMzMzIiBkPSJNNiA5TDEgNGgxMHoiLz48L3N2Zz4=')] bg-no-repeat bg-[right_12px_center] pr-10">
-                            <option value="All Status">All Status</option>
-                            <option value="Active">Active</option>
-                            <option value="Banned">Banned</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
@@ -274,29 +257,23 @@ const UserManagement: React.FC = () => {
                 <table className="w-full min-w-[900px] border-collapse">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
+                            <th className="px-4 py-4 text-left text-ms font-semibold text-gray-600 border-b-2 border-gray-200">
                                 No.
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
+                            <th className="px-4 py-4 text-left text-ms font-semibold text-gray-600 border-b-2 border-gray-200">
                                 User Name
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
+                            <th className="px-4 py-4 text-left text-xmss font-semibold text-gray-600 border-b-2 border-gray-200">
                                 Email
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
+                            <th className="px-4 py-4 text-left text-ms font-semibold text-gray-600 border-b-2 border-gray-200">
                                 Registration Date
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
+                            <th className="px-4 py-4 text-left text-ms font-semibold text-gray-600 border-b-2 border-gray-200">
                                 Task Created
                             </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
+                            <th className="px-4 py-4 text-left text-ms font-semibold text-gray-600 border-b-2 border-gray-200">
                                 Completion Rate
-                            </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
-                                Status
-                            </th>
-                            <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 border-b-2 border-gray-200">
-                                Actions
                             </th>
                         </tr>
                     </thead>
@@ -316,7 +293,7 @@ const UserManagement: React.FC = () => {
                                 <td
                                     colSpan={8}
                                     className="px-4 py-8 text-center text-gray-500">
-                                    {searchText || statusFilter !== 'All Status'
+                                    {searchText
                                         ? 'No matching users found.'
                                         : 'No users found in Firebase.'}
                                 </td>
@@ -350,34 +327,6 @@ const UserManagement: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-4 text-sm text-gray-900">
                                             {user.completion_rate}
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <span
-                                                className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                                                    user.status === 'Active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
-                                                }`}>
-                                                {user.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    className="w-8 h-8 flex items-center justify-center rounded-md bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
-                                                    title="View Details">
-                                                    <FontAwesomeIcon
-                                                        icon={faEye}
-                                                    />
-                                                </button>
-                                                <button
-                                                    className="w-8 h-8 flex items-center justify-center rounded-md bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all"
-                                                    title="Delete User">
-                                                    <FontAwesomeIcon
-                                                        icon={faTrash}
-                                                    />
-                                                </button>
-                                            </div>
                                         </td>
                                     </tr>
                                 );
