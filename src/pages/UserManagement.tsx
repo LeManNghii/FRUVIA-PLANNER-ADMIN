@@ -114,7 +114,9 @@ const UserManagement: React.FC = () => {
 
     // useEffect 2: Tính toán tasks_created và completion_rate cho mỗi user
     useEffect(() => {
-        if (userData.length === 0 || tasks.length === 0) return;
+        // If we don't have any users yet, nothing to compute.
+        // We still want to compute when `tasks` is empty so users show 0%.
+        if (userData.length === 0) return;
 
         console.log(
             '📊 Calculating tasks_created and completion_rate for each user...'
@@ -177,7 +179,7 @@ const UserManagement: React.FC = () => {
         );
 
         console.log('✅ Tasks calculation completed');
-    }, [userData.length, tasks]);
+    }, [userData, tasks]);
 
     // Logic tìm kiếm và lọc dữ liệu
     const filteredUsers = useMemo(() => {
